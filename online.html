@@ -54,7 +54,34 @@
             
             <div class="online-action-buttons">
                 <button id="start-game-online-btn" class="btn-start-game hidden"><i class="fas fa-play"></i> Mulai Permainan (Host)</button>
+                <button id="start-voting-btn" class="btn-secondary hidden"><i class="fas fa-vote-yea"></i> Mulai Sesi Vote (Host)</button>
                 <button id="leave-room-btn" class="btn-danger-text">Keluar dari Room</button>
+            </div>
+        </div>
+
+        <div id="card-reveal-modal" class="modal hidden">
+            <div class="modal-content card-modal-content">
+                <h3 id="card-reveal-popup-title">Ambil Kartu Anda, [Nama Pemain]!</h3>
+                <div class="card-scene">
+                    <div class="card" id="role-card">
+                        <div class="card-face card-back">
+                            <div class="card-back-design">?</div>
+                            <p><i class="fas fa-hand-pointer"></i> SENTUH KARTU UNTUK MEMBALIK</p>
+                        </div>
+                        <div class="card-face card-front">
+                            <div class="stamp">TOP SECRET</div>
+                            <h4 class="card-role-title">Peran Anda:</h4>
+                            <p id="card-player-role"></p>
+                            <h4 class="card-word-title">Kata Rahasia:</h4>
+                            <p id="card-player-word"></p>
+                            <div class="mission-box">
+                                <h4 class="card-mission-title">MISI ANDA:</h4>
+                                <p id="card-player-mission"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button id="hide-card-and-proceed-btn" class="btn-primary"><i class="fas fa-eye-slash"></i> Sembunyikan Kartu</button>
             </div>
         </div>
 
@@ -63,31 +90,6 @@
         </div>
     </div>
 
-    <div id="card-reveal-modal" class="modal hidden">
-    <div class="modal-content card-modal-content">
-        <h3 id="card-reveal-popup-title">Ambil Kartu Anda, [Nama Pemain]!</h3>
-        <div class="card-scene">
-            <div class="card" id="role-card">
-                <div class="card-face card-back">
-                    <div class="card-back-design">?</div>
-                    <p><i class="fas fa-hand-pointer"></i> SENTUH KARTU UNTUK MEMBALIK</p>
-                </div>
-                <div class="card-face card-front">
-                    <div class="stamp">TOP SECRET</div>
-                    <h4 class="card-role-title">Peran Anda:</h4>
-                    <p id="card-player-role"></p>
-                    <h4 class="card-word-title">Kata Rahasia:</h4>
-                    <p id="card-player-word"></p>
-                    <div class="mission-box">
-                        <h4 class="card-mission-title">MISI ANDA:</h4>
-                        <p id="card-player-mission"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button id="hide-card-and-proceed-btn" class="btn-primary"><i class="fas fa-eye-slash"></i> Sembunyikan & Lanjut</button>
-    </div>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       const supabaseUrl = 'https://wqtqklxzkxbhatsgojfq.supabase.co';

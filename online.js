@@ -1,7 +1,7 @@
-// File: online.js (Versi Final dengan Fitur Kartu)
+// File: online.js (Versi dengan Suara & Sesi Vote)
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Logika Online.js dengan Fitur Kartu dimuat.");
+    console.log("Logika Online.js dengan Suara & Vote dimuat.");
     
     // --- Elemen UI ---
     const onlineLobbySection = document.getElementById('online-lobby-section');
@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const joinRoomBtn = document.getElementById('join-room-btn');
     const leaveRoomBtn = document.getElementById('leave-room-btn');
     const startGameBtn = document.getElementById('start-game-online-btn');
+    const startVotingBtn = document.getElementById('start-voting-btn'); // Tombol baru
     const playerNameInput = document.getElementById('player-name-online');
     const roomCodeInput = document.getElementById('join-room-code');
     const roomCodeDisplay = document.getElementById('room-code-display');
@@ -21,8 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const sendChatBtn = document.getElementById('send-chat-btn');
     const discussionTitle = document.getElementById('discussion-title');
-
-    // === ELEMEN KARTU PERAN (BARU) ===
     const cardRevealModal = document.getElementById('card-reveal-modal');
     const cardRevealPopupTitleH3 = document.getElementById('card-reveal-popup-title');
     const roleCardElement = document.getElementById('role-card');
@@ -30,6 +29,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardPlayerWordP = document.getElementById('card-player-word');
     const cardPlayerMissionP = document.getElementById('card-player-mission');
     const hideCardAndProceedBtn = document.getElementById('hide-card-and-proceed-btn');
+
+    // === BAGIAN AUDIO (BARU) ===
+    let audioContext;
+    let soundBuffers = {};
+    const backgroundMusic = new Audio('assets/music/bg_music.mp3');
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.15;
+    
+    async function setupAudio() {
+        if (audioContext) return;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const response = await fetch('assets/sounds/click.mp3');
+            const arrayBuffer = await response.arrayBuffer();
+            soundBuffers.click = await audioContext.decodeAudioData(arrayBuffer);
+        } catch (e) {
+            console.error("Gagal memuat audio:", e);
+        }
+    }
+    
+    function playClickSound() {
+        if (!audioContext || !soundBuffers.click) return;
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = soundBuffers.click;
+        source.connect(audioContext.destination);
+        source.start(0);
+    }
+    document.body.addEventListener('click', setupAudio, { once: true });
+    // === AKHIR BAGIAN AUDIO ===
 
     // --- State Lokal ---
     let localPlayer = { id: null, name: null, is_host: false, role: null, word: null, voted_for: null };
@@ -115,10 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         playerCountUI.textContent = playersInRoom.length;
         
-        if (localPlayer.is_host && playersInRoom.length >= 3 && currentRoom?.game_state === 'lobby') {
-            startGameBtn.classList.remove('hidden');
+        // Atur visibilitas tombol Host
+        if (localPlayer.is_host) {
+            startGameBtn.classList.toggle('hidden', !(playersInRoom.length >= 3 && currentRoom?.game_state === 'lobby'));
+            startVotingBtn.classList.toggle('hidden', currentRoom?.game_state !== 'discussion');
         } else {
             startGameBtn.classList.add('hidden');
+            startVotingBtn.classList.add('hidden');
         }
     }
 
@@ -130,9 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localPlayer.is_host = true;
         
         const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-        
         const { data, error } = await supabaseClient.from('rooms').insert({ code, host_name: name, game_state: 'lobby' }).select().single();
-        
         if (error) return showError('Gagal membuat room. Coba lagi.');
         
         await handleJoinRoom(code);
@@ -164,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         await fetchInitialMessages();
         listenToRoomChanges();
+        backgroundMusic.play().catch(e => console.log("Browser memblokir autoplay musik."));
     }
     
     async function fetchInitialMessages() {
@@ -176,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function listenToRoomChanges() {
         if (roomChannel) roomChannel.unsubscribe();
-        
         roomChannel = supabaseClient.channel(`room-${currentRoom.id}`);
         
         roomChannel
@@ -236,11 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localPlayer.role = data.role;
         localPlayer.word = data.word;
         
-        // MENGGANTI alert() DENGAN FUNGSI KARTU BARU
         showRoleOnCard(localPlayer.role, localPlayer.word);
     }
 
-    // === BAGIAN KARTU PERAN (BARU) ===
     function showRoleOnCard(role, word) {
         cardRevealPopupTitleH3.innerHTML = `<i class="fas fa-id-card"></i> Kartu untuk ${localPlayer.name}`;
         cardPlayerRoleP.textContent = role;
@@ -248,28 +278,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let missionText = '';
         switch (role) {
-            case "Civilian":
-                missionText = "Beri petunjuk satu kata yang mengarah ke katamu untuk menemukan teman, tapi jangan terlalu jelas agar musuh tidak menebaknya. Bongkar kedok para penyamar!";
-                break;
-            case "Undercover":
-                missionText = "Katamu sedikit berbeda. Berpura-puralah menjadi Civilian dengan memberi petunjuk yang meyakinkan, lalu singkirkan mereka satu per satu saat lengah.";
-                break;
-            case "Mr. White":
-                missionText = "Kamu adalah agen rahasia tanpa informasi. Dengarkan petunjuk lain, beraktinglah seolah kamu tahu segalanya, dan tebak kata rahasia jika identitasmu terbongkar!";
-                break;
+            case "Civilian": missionText = "Bongkar kedok para penyamar!"; break;
+            case "Undercover": missionText = "Berpura-puralah menjadi Civilian!"; break;
+            case "Mr. White": missionText = "Tebak kata rahasia jika identitasmu terbongkar!"; break;
         }
         cardPlayerMissionP.textContent = missionText;
 
-        // Siapkan kartu untuk ditampilkan
-        roleCardElement.classList.remove('is-flipped'); // Pastikan kartu tertutup
-        hideCardAndProceedBtn.textContent = "Sembunyikan Kartu"; // Ganti teks tombol
-        hideCardAndProceedBtn.classList.add('hidden'); // Sembunyikan tombol dulu
+        roleCardElement.classList.remove('is-flipped');
+        hideCardAndProceedBtn.textContent = "Sembunyikan Kartu";
+        hideCardAndProceedBtn.classList.add('hidden');
         
-        // Tampilkan modal
         cardRevealModal.classList.remove('hidden');
     }
 
     function handleCardFlip() {
+        playClickSound();
         if (!roleCardElement.classList.contains('is-flipped')) {
             roleCardElement.classList.add('is-flipped');
             hideCardAndProceedBtn.classList.remove('hidden');
@@ -277,12 +300,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleHideCard() {
+        playClickSound();
         roleCardElement.classList.remove('is-flipped');
         setTimeout(() => {
             cardRevealModal.classList.add('hidden');
         }, 250);
     }
-    // === AKHIR BAGIAN KARTU PERAN ===
+
+    // FUNGSI BARU: Memulai Sesi Vote
+    async function handleStartVoting() {
+        playClickSound();
+        const { error } = await supabaseClient
+            .from('rooms')
+            .update({ game_state: 'voting' })
+            .eq('id', currentRoom.id);
+        
+        if (error) {
+            showError("Gagal memulai sesi vote. Coba lagi.");
+            console.error(error);
+        }
+    }
 
     function onVotingStart() {
         addSystemMessage("Waktu habis! Silakan vote pemain yang paling mencurigakan.");
@@ -293,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     async function handleVote(targetPlayerId) {
+        playClickSound();
         if (targetPlayerId === localPlayer.id) return alert("Anda tidak bisa vote diri sendiri!");
         
         const { error } = await supabaseClient.from('players').update({ voted_for: targetPlayerId }).eq('id', localPlayer.id);
@@ -301,21 +339,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleLeaveRoom() {
+        playClickSound();
         if (roomChannel) await roomChannel.unsubscribe();
         if(localPlayer.id) await supabaseClient.from('players').delete().eq('id', localPlayer.id);
+        backgroundMusic.pause();
         window.location.href = 'index.html';
     }
 
     async function handleSendMessage() {
+        playClickSound();
         const messageContent = chatInput.value.trim();
         if (!messageContent) return;
 
-        const messageData = {
-            content: messageContent,
-            player_id: localPlayer.id,
-            player_name: localPlayer.name,
-            room_id: currentRoom.id
-        };
+        const messageData = { content: messageContent, player_id: localPlayer.id, player_name: localPlayer.name, room_id: currentRoom.id };
 
         try {
             const { error } = await supabaseClient.from('messages').insert(messageData);
@@ -328,10 +364,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
+    const allButtons = document.querySelectorAll('button');
+    allButtons.forEach(button => button.addEventListener('click', () => { if(button.id !== 'send-chat-btn') playClickSound()}));
+
     createRoomBtn.addEventListener('click', handleCreateRoom);
     joinRoomBtn.addEventListener('click', () => handleJoinRoom(null));
     leaveRoomBtn.addEventListener('click', handleLeaveRoom);
     startGameBtn.addEventListener('click', handleStartGameClick);
+    startVotingBtn.addEventListener('click', handleStartVoting); // Listener untuk tombol baru
     copyCodeBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(currentRoom.code);
         alert(`Kode Room ${currentRoom.code} disalin!`);
@@ -340,8 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     playerListUI.addEventListener('click', (e) => {
         const voteButton = e.target.closest('.vote-button');
         if (voteButton && !voteButton.disabled) {
-            const targetId = voteButton.dataset.targetId;
-            handleVote(targetId);
+            handleVote(voteButton.dataset.targetId);
         }
     });
 
@@ -353,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // === EVENT LISTENER KARTU PERAN (BARU) ===
     roleCardElement.addEventListener('click', handleCardFlip);
     hideCardAndProceedBtn.addEventListener('click', handleHideCard);
 
