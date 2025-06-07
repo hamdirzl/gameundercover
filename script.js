@@ -864,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gameInProgress = false;
             currentWinningTeamType = determinedWinType;
             currentWinnerPlayerObjects = determinedWinners;
-            if (determinedWinType !== "NO_WINNER_DRAW") playWinSound();
+            if (determinedWinType !== "NO_WINNER_DRAW" && currentWinningTeamType) playWinSound();
             announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
         } else {
             // Jika tidak ada yang menang, lanjutkan permainan ke ronde berikutnya
