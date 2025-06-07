@@ -19,13 +19,13 @@
         </div>
 
         <div id="online-lobby-section">
-            <div class="lobby-actions" style="background: var(--theme-surface-transparent); backdrop-filter: blur(12px); border: 1px solid var(--theme-border); border-radius: var(--border-radius-main); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); padding: 25px; display: flex; flex-direction: column; gap: 15px;">
-                <h2 style="margin-bottom: 20px;"><i class="fas fa-globe"></i> Lobi Online</h2>
+            <div class="lobby-actions">
+                <h2><i class="fas fa-globe"></i> Lobi Online</h2>
                 <div class="input-group">
                     <input type="text" id="player-name-online" placeholder="Masukkan Nama Anda..." maxlength="15">
                 </div>
                 <button id="create-room-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> Buat Room Baru</button>
-                <hr class="config-divider" style="margin: 20px 0;">
+                <hr class="config-divider" style="margin: 15px 0;">
                 <div class="input-group">
                     <input type="text" id="join-room-code" placeholder="Masukkan Kode Room..." maxlength="5" style="text-transform:uppercase">
                     <button id="join-room-btn" class="btn-secondary"><i class="fas fa-sign-in-alt"></i> Gabung</button>
@@ -34,34 +34,22 @@
             </div>
         </div>
 
-        <div id="online-game-room" class="hidden" style="background: var(--theme-surface-transparent); backdrop-filter: blur(12px); border: 1px solid var(--theme-border); border-radius: var(--border-radius-main); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); padding: 25px; display: flex; flex-direction: column; gap: 15px;">
+        <div id="online-game-room" class="hidden">
             <h2 id="room-title">Room: <span id="room-code-display" class="role-mrwhite"></span> <button id="copy-code-btn" title="Salin Kode"><i class="fas fa-copy"></i></button></h2>
-            <p>Bagikan kode di atas agar temanmu bisa bergabung!</p>
+            <p id="game-status-info">Bagikan kode di atas agar temanmu bisa bergabung!</p>
             
-            <h3 style="margin-top: 20px;"><i class="fas fa-users"></i> Pemain di Room (<span id="player-count">0</span>)</h3>
-            <ul id="online-player-list" class="player-avatar-grid">
-                </ul>
+            <h3 style="margin-top: 10px;"><i class="fas fa-users"></i> Pemain di Room (<span id="player-count">0</span>)</h3>
+            <ul id="online-player-list" class="player-avatar-grid"></ul>
 
-            <div id="online-discussion-area">
-                <h3 id="discussion-title"><i class="fas fa-comments"></i> Lobi Chat</h3>
-                <div id="chat-box">
-                    </div>
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Ketik pesan..." disabled>
-                    <button id="send-chat-btn" class="btn-primary" disabled><i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
-            
             <div class="online-action-buttons">
                 <button id="start-game-online-btn" class="btn-start-game hidden"><i class="fas fa-play"></i> Mulai Permainan (Host)</button>
-                <button id="start-voting-btn" class="btn-secondary hidden"><i class="fas fa-vote-yea"></i> Mulai Sesi Vote (Host)</button>
                 <button id="leave-room-btn" class="btn-danger-text">Keluar dari Room</button>
             </div>
         </div>
 
         <div id="card-reveal-modal" class="modal hidden">
             <div class="modal-content card-modal-content">
-                <h3 id="card-reveal-popup-title">Ambil Kartu Anda, [Nama Pemain]!</h3>
+                <h3 id="card-reveal-popup-title">Kartu untuk [Nama Pemain]!</h3>
                 <div class="card-scene">
                     <div class="card" id="role-card">
                         <div class="card-face card-back">
@@ -81,7 +69,51 @@
                         </div>
                     </div>
                 </div>
-                <button id="hide-card-and-proceed-btn" class="btn-primary"><i class="fas fa-eye-slash"></i> Sembunyikan Kartu</button>
+                <button id="hide-card-and-proceed-btn" class="btn-primary hidden"><i class="fas fa-eye-slash"></i> Saya Mengerti</button>
+            </div>
+        </div>
+
+        <div id="mr-white-guess-section" class="modal hidden">
+            <div class="modal-content">
+                <h3><i class="fas fa-user-tie"></i> Mr. White Teridentifikasi!</h3>
+                <p><strong id="mr-white-name-guess"></strong>, Anda punya satu kesempatan untuk menebak kata rahasia Civilian:</p>
+                <input type="text" id="mr-white-word-guess-input" placeholder="Ketik tebakan kata...">
+                <button id="submit-mr-white-guess-btn" class="btn-primary">Kirim Tebakan</button>
+                <p id="mr-white-wait-message" class="hidden">Menunggu <strong id="mr-white-wait-name"></strong> menebak...</p>
+            </div>
+        </div>
+
+        <div id="elimination-result-popup" class="modal hidden">
+            <div class="modal-content">
+                <h3 id="eliminated-player-info"></h3>
+                <div id="truth-or-dare-section">
+                    <p>Silakan pilih hukuman untuk yang tereliminasi:</p>
+                    <div class="truth-dare-buttons">
+                        <button id="truth-btn"><i class="fas fa-check-circle"></i> Truth</button>
+                        <button id="dare-btn"><i class="fas fa-fire"></i> Dare</button>
+                    </div>
+                    <div id="penalty-display" class="hidden">
+                        <p id="penalty-text"></p>
+                    </div>
+                </div>
+                <p id="penalty-wait-message" class="hidden">Menunggu pemain lain melanjutkan...</p>
+                <button id="close-elimination-popup-btn" class="hidden btn-secondary"><i class="fas fa-arrow-right"></i> Lanjut</button>
+            </div>
+        </div>
+
+        <div id="winner-popup-modal" class="modal hidden">
+            <div class="modal-content">
+                <img id="confetti-animation" src="assets/images/confetti.gif" alt="Confetti" class="confetti-overlay hidden"/>
+                <div class="winner-content-wrapper">
+                    <h2 id="popup-winner-message">🎉 Selamat! 🎉</h2>
+                    <p id="popup-winner-detail"></p>
+                    <div id="round-roles-section">
+                        <h4>Detail Peran Babak Ini:</h4>
+                        <ul id="round-roles-list"></ul>
+                    </div>
+                    <button id="play-again-btn" class="btn-primary hidden"><i class="fas fa-redo"></i> Main Lagi (Host)</button>
+                     <p id="host-wait-message" class="hidden">Menunggu host memulai babak baru...</p>
+                </div>
             </div>
         </div>
 
