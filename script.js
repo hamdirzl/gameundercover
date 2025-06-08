@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- AUTH ELEMENTS ---
     const authBtn = document.getElementById('auth-btn');
+    console.log('Mencari #auth-btn di awal:', authBtn); // DEBUG
     const closeAuthModalBtn = document.getElementById('close-auth-modal-btn');
     const loginView = document.getElementById('login-view');
     const registerView = document.getElementById('register-view');
@@ -111,12 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LOGIKA MENU HAMBURGER (BARU) ---
     hamburgerBtn.addEventListener('click', (event) => {
-        event.stopPropagation(); // Mencegah event "klik" menyebar ke window
+        event.stopPropagation();
         playClickSound();
         dropdownMenu.classList.toggle('show');
     });
 
-    // Menutup menu jika mengklik di luar area menu
     window.addEventListener('click', (event) => {
         if (!hamburgerBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
             if (dropdownMenu.classList.contains('show')) {
@@ -184,9 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let playersAwaitingPenalty = [];
     let customWordPacks = {};
     let currentWordList = [];
-    let currentUser = null; // Menyimpan info user yg login
-    let currentRoom = null; // Akan menyimpan semua data ruangan dari Supabase
-    let gameRoomChannel = null; // Akan menyimpan koneksi realtime ke Supabase
+    let currentUser = null; 
+    let currentRoom = null; 
+    let gameRoomChannel = null;
 
 
     const POINTS_MW_GUESS_WIN = 7; const POINTS_UC_WIN = 5; const POINTS_MW_SURVIVAL_WIN = 5;
@@ -269,12 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
         clearAuthErrors();
     };
 
-    // BLOK AUTENTIKASI YANG SUDAH DIPERBAIKI
+    // BLOK AUTENTIKASI DENGAN VERSI DEBUG
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        const user = session?.user;
+        console.log('>>> Fungsi onAuthStateChange Mulai Berjalan. Event:', event);
 
-        // Logika ini lebih andal karena menangani semua kondisi (login baru, sudah login, logout)
+        const user = session?.user;
+        console.log('>>> Mengecek user:', user);
+
         if (user) {
+            console.log('>>> KONDISI: User DITEMUKAN. Mengatur tombol untuk fungsi logout.');
             currentUser = user;
             authBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
             authBtn.title = `Logout (${user.email})`;
@@ -282,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authModal.classList.add('hidden');
             authBtn.onclick = handleLogout;
         } else {
+            console.log('>>> KONDISI: User TIDAK Ditemukan (null). Mengatur tombol untuk membuka modal login.');
             currentUser = null;
             customWordPacks = {}; 
             authBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
@@ -289,8 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
             wordPackOwnerSpan.classList.add('hidden');
             authBtn.onclick = openAuthModal;
         }
-        // Selalu muat paket kata setelah status otentikasi berubah
+        
+        console.log('>>> Memeriksa authBtn.onclick setelah diatur:', authBtn.onclick);
+        
         await loadWordPacks();
+        console.log('>>> Fungsi onAuthStateChange Selesai.');
     });
 
 
@@ -331,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         playClickSound();
         howToPlayModal.classList.remove('hidden');
-        dropdownMenu.classList.remove('show'); // TUTUP MENU
+        dropdownMenu.classList.remove('show');
     });
     closeGuideBtn.addEventListener('click', () => {
         playClickSound();
@@ -341,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         playClickSound();
         musicSettingsModal.classList.remove('hidden');
-        dropdownMenu.classList.remove('show'); // TUTUP MENU
+        dropdownMenu.classList.remove('show');
     });
     closeMusicSettingsBtn.addEventListener('click', () => {
         playClickSound();
@@ -359,28 +366,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENT LISTENER BARU
     createOnlineRoomBtn.addEventListener('click', () => {
         playClickSound();
-        createOnlineRoom(); // Panggil fungsi utama kita
+        createOnlineRoom();
     });
 
     joinOnlineRoomBtn.addEventListener('click', () => {
         playClickSound();
-        joinRoomModal.classList.remove('hidden'); // Tampilkan popup untuk gabung
+        joinRoomModal.classList.remove('hidden');
     });
 
     closeJoinModalBtn.addEventListener('click', () => {
         playClickSound();
-        joinRoomModal.classList.add('hidden'); // Sembunyikan popup
+        joinRoomModal.classList.add('hidden');
     });
 
     confirmJoinRoomBtn.addEventListener('click', () => {
         playClickSound();
-        joinOnlineRoom(); // Panggil fungsi gabung ruangan kita
+        joinOnlineRoom();
     });
     
     startOnlineGameBtn.addEventListener('click', () => {
         playClickSound();
-        // Akan kita isi nanti dengan fungsi handleStartGame()
-        alert("Fungsi Mulai Game akan kita buat di langkah berikutnya!");
+        handleStartGame();
     });
 
 
@@ -914,12 +920,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let determinedWinType = "";
         let determinedWinners = [];
 
-        // KONDISI BARU: Kemenangan Duel 1 vs 1 Undercover
         if (activePlayers.length === 2 && activeCivilians.length === 1 && activeUndercovers.length === 1) {
             winDetected = true;
             determinedWinType = "UC_DUEL_WIN";
             determinedWinners = activeUndercovers;
-            // Civilian yang kalah akan mendapat hukuman
             eliminatedThisRoundPlayer = activeCivilians[0];
             eliminatedThisRoundPlayer.isEliminated = true;
 
@@ -932,23 +936,16 @@ document.addEventListener('DOMContentLoaded', () => {
             eliminatedPlayerInfoH3.innerHTML = `<i class="fas fa-skull-crossbones"></i> ${eliminatedThisRoundPlayer.name} (Civilian) kalah dalam duel terakhir!`;
             resetTruthOrDareButtons();
             eliminationResultPopup.classList.remove('hidden');
-            // Alur akan berlanjut ke pengumuman pemenang setelah popup hukuman ditutup
             return; 
         }
 
-        // KONDISI 1: Kemenangan Tim Civilian
-        // Jika tidak ada lagi Undercover DAN Mr. White yang aktif.
         if (activeUndercovers.length === 0 && activeMrWhites.length === 0) {
             winDetected = true;
             determinedWinType = "CIVILIAN_TEAM";
-            // Pemenangnya adalah SEMUA pemain yang peran aslinya Civilian.
             determinedWinners = players.filter(p => p.originalRole === 'Civilian');
         }
-        // KONDISI 2: Kemenangan Tim Undercover / Mr. White
-        // Hanya jika sudah TIDAK ADA LAGI Civilian yang tersisa.
         else if (activeCivilians.length === 0) {
             winDetected = true;
-            // Pemenangnya adalah semua yang masih bertahan.
             determinedWinners = activePlayers;
             
             const survivingUndercovers = activePlayers.filter(p => p.role === 'Undercover');
@@ -963,28 +960,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // PROSES HASIL
         if (winDetected) {
             gameInProgress = false;
             currentWinningTeamType = determinedWinType;
             currentWinnerPlayerObjects = determinedWinners;
 
-            // Jika yang dieliminasi terakhir adalah Civilian, berikan dia hukuman dulu
             if (eliminatedThisRoundPlayer?.originalRole === 'Civilian' && activeCivilians.length === 0) {
                  document.getElementById('voting-phase').classList.add('hidden');
                  eliminatedPlayerInfoH3.innerHTML = `<i class="fas fa-skull-crossbones"></i> ${eliminatedThisRoundPlayer.name} (Civilian Terakhir) telah tereliminasi!`;
                  resetTruthOrDareButtons();
                  eliminationResultPopup.classList.remove('hidden');
-                 // Pemenang akan diumumkan setelah popup hukuman ditutup.
                  return;
             }
             
-            // Langsung umumkan pemenang jika kondisinya berbeda
             playWinSound();
             announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
 
         } else {
-            // Jika tidak ada yang menang, permainan berlanjut.
             document.getElementById('voting-phase').classList.remove('hidden');
             playerSelectedForElimination = null;
             if(playerToEliminateDisplay) playerToEliminateDisplay.textContent = "Belum ada";
@@ -1088,23 +1080,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========== FUNGSI-FUNGSI BARU UNTUK MODE ONLINE ========
     // =========================================================
 
-    /**
-     * Menghasilkan kode ruangan 4 digit acak.
-     */
     function generateRoomCode() {
         return Math.random().toString(36).substring(2, 6).toUpperCase();
     }
 
-    /**
-     * Memperbarui UI Lobi dengan data dari server.
-     * @param {object} roomData - Data ruangan dari Supabase.
-     */
     function updateLobbyUI(roomData) {
         lobbyRoomCode.textContent = roomData.room_code;
         playerCountSpan.textContent = roomData.players.length;
         maxPlayerCountSpan.textContent = roomData.config.total;
 
-        lobbyPlayerList.innerHTML = ''; // Kosongkan daftar pemain lama
+        lobbyPlayerList.innerHTML = '';
         roomData.players.forEach(player => {
             const li = document.createElement('li');
             li.classList.add('player-avatar-card');
@@ -1128,10 +1113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    /**
-     * Berlangganan (subscribe) ke perubahan realtime pada sebuah ruangan. (VERSI UPDATE)
-     * @param {string} roomId - ID dari ruangan yang akan didengarkan.
-     */
     function subscribeToRoomChanges(roomId) {
         if (gameRoomChannel) {
             gameRoomChannel.unsubscribe();
@@ -1152,9 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const updatedRoom = payload.new;
                     currentRoom = updatedRoom;
 
-                    // Logika berdasarkan status game
                     if (updatedRoom.game_state === 'LOBBY') {
-                        // --- MASIH DI LOBI ---
                         updateLobbyUI(updatedRoom);
                         
                         const isHost = updatedRoom.host_id === currentUser?.id;
@@ -1176,21 +1155,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                     } else if (updatedRoom.game_state === 'PLAYING') {
-                        // --- GAME DIMULAI! ---
                         console.log("State 'PLAYING' terdeteksi, memulai setup kartu...");
-                        // 1. Cari data diri pemain di browser ini
                         const myPlayerData = updatedRoom.players.find(p => p.userId === currentUser.id);
                         if (!myPlayerData) {
                             console.error("Data saya tidak ditemukan di dalam room!");
                             return;
                         }
 
-                        // 2. Tampilkan kartu peran untuk pemain ini
-                        // Kita bisa gunakan lagi fungsi `showRoleOnCard` yang sudah ada!
                         showRoleOnCard(myPlayerData.name, myPlayerData.role, myPlayerData.word);
-
-                        // 3. Pindahkan layar semua pemain dari lobi ke tampilan kartu
-                        // (Fungsi showRoleOnCard sudah menampilkan modal kartu)
                         lobbySection.classList.add('hidden');
                     }
                 }
@@ -1200,12 +1172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Berhasil berlangganan ke channel: room_${roomId}`);
     }
 
-
-    /**
-     * Fungsi untuk pemain bergabung ke ruangan yang sudah ada.
-     */
     async function joinOnlineRoom() {
-        // 1. Cek login & validasi input
         if (!currentUser) {
             alert("Anda harus login untuk bergabung!");
             openAuthModal();
@@ -1224,7 +1191,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 2. Cari ruangan di database
         console.log(`Mencari ruangan dengan kode: ${roomCode}`);
         const { data: roomData, error: fetchError } = await supabaseClient
             .from('game_rooms')
@@ -1238,7 +1204,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 3. Validasi ruangan
         if (roomData.game_state !== 'LOBBY') {
             alert("Gagal bergabung, permainan di ruangan ini sudah dimulai.");
             return;
@@ -1251,7 +1216,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Anda sudah berada di dalam ruangan ini!");
             currentRoom = roomData;
         } else {
-            // 4. Jika valid, tambahkan pemain baru
             const newPlayer = {
                 userId: currentUser.id,
                 name: playerName.trim(),
@@ -1260,7 +1224,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const updatedPlayers = [...roomData.players, newPlayer];
 
-            // 5. Update data di Supabase
             const { data: updatedRoom, error: updateError } = await supabaseClient
                 .from('game_rooms')
                 .update({ players: updatedPlayers })
@@ -1276,19 +1239,13 @@ document.addEventListener('DOMContentLoaded', () => {
             currentRoom = updatedRoom;
         }
         
-        // 6. Pindahkan layar ke lobi
         console.log("Berhasil bergabung dengan ruangan:", currentRoom);
         switchScreen(initialConfigSection, lobbySection);
         joinRoomModal.classList.add('hidden');
         updateLobbyUI(currentRoom);
-
         subscribeToRoomChanges(currentRoom.id);
     }
 
-
-    /**
-     * Fungsi utama untuk membuat ruangan baru dan menyimpannya di Supabase.
-     */
     async function createOnlineRoom() {
         if (!currentUser) {
             alert("Anda harus login untuk membuat sebuah ruangan!");
@@ -1348,9 +1305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Dijalankan oleh Host untuk memulai permainan.
-     */
     async function handleStartGame() {
         if (!currentUser || !currentRoom || currentRoom.host_id !== currentUser.id) {
             alert("Hanya host yang bisa memulai permainan.");
@@ -1424,7 +1378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         console.log("Game dimulai! State telah diupdate di Supabase.");
     }
-
 
     // Initialize Game
     resetGameFull();
