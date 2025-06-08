@@ -690,10 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateActivePlayerListWithAvatars() {
         activePlayerListUl.innerHTML = '';
         const activePlayers = players.filter(p => !p.isEliminated);
-        if (activePlayers.length === 0 && gameInProgress) { // If no active players left, but game is still running, check win condition
-            checkWinConditionsAndProceed();
-            return;
-        }
+        if (activePlayers.length === 0 && gameInProgress) { checkWinConditionsAndProceed(); return; }
         activePlayers.forEach(player => {
             const li = document.createElement('li'); li.dataset.playerName = player.name;
             li.classList.add('player-avatar-card');
@@ -708,16 +705,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleAvatarVoteSelection(event) {
-        if (!gameInProgress) return; // Prevent voting if game is over
+        if (!gameInProgress) return;
         const clickedLi = event.target.closest('.player-avatar-card');
-        if (!clickedLi || clickedLi.classList.contains('eliminated')) return; // Ignore if already eliminated
+        if (!clickedLi || clickedLi.classList.contains('eliminated')) return;
         const previouslySelectedCard = activePlayerListUl.querySelector('.selected-for-vote');
         if (clickedLi === previouslySelectedCard) {
-            // Deselect
             clickedLi.classList.remove('selected-for-vote'); playerSelectedForElimination = null;
             playerToEliminateDisplay.textContent = "Belum ada"; confirmEliminationBtn.disabled = true;
         } else {
-            // Select new player
             if (previouslySelectedCard) previouslySelectedCard.classList.remove('selected-for-vote');
             clickedLi.classList.add('selected-for-vote'); playerSelectedForElimination = clickedLi.dataset.playerName;
             playerToEliminateDisplay.textContent = playerSelectedForElimination; confirmEliminationBtn.disabled = false;
@@ -729,85 +724,83 @@ document.addEventListener('DOMContentLoaded', () => {
         eliminatedThisRoundPlayer = players.find(p => p.name === playerSelectedForElimination);
         if (!eliminatedThisRoundPlayer) return;
         eliminatedThisRoundPlayer.isEliminated = true;
-
-        document.getElementById('voting-phase').classList.add('hidden');
-
+        
+        // Cek apakah pemain yang tereliminasi adalah Mr. White
         if (eliminatedThisRoundPlayer.role === "Mr. White") {
+            // Tampilkan bagian tebakan Mr. White
             mrWhiteGuessSection.classList.remove('hidden');
             mrWhiteNameGuessStrong.textContent = eliminatedThisRoundPlayer.name;
+            document.getElementById('voting-phase').classList.add('hidden');
         } else {
-            // If not Mr. White, proceed with general elimination popup and penalty
+            // Tampilkan popup eliminasi dan hukuman
             eliminatedPlayerInfoH3.innerHTML = `<i class="fas fa-skull-crossbones"></i> ${eliminatedThisRoundPlayer.name} (Peran: ${eliminatedThisRoundPlayer.role}) telah tereliminasi.`;
             resetTruthOrDareButtons();
             eliminationResultPopup.classList.remove('hidden');
-            
-            // --- LOGIKA HUKUMAN: Pemain tereliminasi ini langsung dapat hukuman individual ---
-            playersAwaitingPenalty = [eliminatedThisRoundPlayer]; // Hanya pemain yang tereliminasi ini yang akan dihukum
-            // The checkWinConditionsAndProceed will be called from handleCloseEliminationPopup after penalty is done.
-            // So we don't call it here directly.
-            // --- END LOGIKA HUKUMAN ---
+            document.getElementById('voting-phase').classList.add('hidden');
+
+            // Set pemain yang akan dihukum
+            playersAwaitingPenalty = [eliminatedThisRoundPlayer];
         }
-        // --- PERBAIKAN: Reset pemilihan pemain setelah dikonfirmasi ---
-        // PENTING: Reset ini harus terjadi untuk memungkinkan pemilihan berikutnya
+        
         playerSelectedForElimination = null; 
         playerToEliminateDisplay.textContent = "Belum ada";
         confirmEliminationBtn.disabled = true; 
-        // Update the list of active players immediately after elimination
         updateActivePlayerListWithAvatars();
-        // --- END PERBAIKAN ---
+
+        // Panggil checkWinConditionsAndProceed setelah eliminasi
+        // Ini akan dipanggil setelah user menutup popup hukuman, atau langsung jika Mr. White menebak
+        // Untuk Mr. White, checkWinConditionsAndProceed akan dipanggil dari handleMrWhiteGuess
     }
 
     function handleCloseEliminationPopup() {
         eliminationResultPopup.classList.add('hidden');
         resetTruthOrDareButtons();
-        // --- PERBAIKAN: Panggil checkWinConditionsAndProceed setelah hukuman selesai ---
-        // Ini adalah titik kunci untuk melanjutkan alur game setelah popup hukuman ditutup.
+        // Setelah popup hukuman ditutup, baru cek kondisi kemenangan
         checkWinConditionsAndProceed();
-        // --- END PERBAIKAN ---
     }
 
     function handleMrWhiteGuess() {
         const guess = mrWhiteWordGuessInput.value.trim();
         mrWhiteGuessSection.classList.add('hidden');
         mrWhiteWordGuessInput.value = '';
-        
-        // --- PERBAIKAN: JANGAN SET gameInProgress = false DI SINI JIKA MR. WHITE SALAH TEBAK ---
-        // Jika Mr. White salah tebak, game MUNGKIN berlanjut untuk tim lain.
-        // gameInProgress akan diatur oleh checkWinConditionsAndProceed jika memang game berakhir.
-        // gameInProgress = false; // Ini dihapus atau dikomentari
-        // --- END PERBAIKAN ---
 
-        // --- PERBAIKAN LOGIKA KEMENANGAN & HUKUMAN MR. WHITE ---
+        gameInProgress = false; // Game berakhir di sini, terlepas dari tebakan Mr. White
+
         if (guess.toLowerCase() === civilianWord.toLowerCase()) {
             playWinSound();
             currentWinningTeamType = "MR_WHITE_GUESS";
-            currentWinnerPlayerObjects = [eliminatedThisRoundPlayer]; // HANYA Mr. White yang menang
-            gameInProgress = false; // Game PASTI berakhir jika Mr. White berhasil menebak
-
-            // Semua pemain yang masih aktif (belum tereliminasi) DAN BUKAN Mr. White yang menang
+            currentWinnerPlayerObjects = [eliminatedThisRoundPlayer]; // Hanya Mr. White yang menang
+            
+            // Pemain yang akan dihukum adalah SEMUA pemain yang masih aktif (belum tereliminasi) 
+            // DAN BUKAN Mr. White yang baru saja menang.
             playersAwaitingPenalty = players.filter(p => !p.isEliminated && p.name !== eliminatedThisRoundPlayer.name);
-
+            
             if (playersAwaitingPenalty.length > 0) {
+                // Jika ada pemain yang perlu dihukum, tampilkan modal hukuman massal
                 massPenaltyModal.classList.remove('hidden');
-                processNextPenalty(); // Mulai hukuman massal
+                processNextPenalty();
             } else {
-                announceWinner(currentWinningTeamType, currentWinnerPlayerObjects); // Announce winner immediately
+                // Jika tidak ada yang perlu dihukum, langsung umumkan pemenang
+                announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
             }
         } else {
             playLoseSound();
-            // Mr. White failed the guess, so he is eliminated and his team doesn't win this way.
-            // Reset winning state so checkWinConditionsAndProceed can determine if another team wins.
-            currentWinningTeamType = null; 
-            currentWinnerPlayerObjects = []; 
+            currentWinningTeamType = "NO_WINNER_DRAW"; // Mr. White kalah dalam tebakannya
+            currentWinnerPlayerObjects = []; // Tidak ada pemenang dari aksi Mr. White
 
+            // Tampilkan informasi bahwa Mr. White gagal menebak
             eliminatedPlayerInfoH3.innerHTML = `<i class="fas fa-times-circle"></i> ${eliminatedThisRoundPlayer.name} (Mr. White) gagal menebak dan tereliminasi.`;
-            resetTruthOrDareButtons();
             eliminationResultPopup.classList.remove('hidden');
-            // The flow will continue to handleCloseEliminationPopup which then calls checkWinConditionsAndProceed
-            // to evaluate if Civilian or Undercover/Mr. White team wins now.
+            resetTruthOrDareButtons();
+
+            // Set pemain yang akan dihukum: hanya Mr. White sendiri jika mau, atau lewati hukuman spesifik Mr. White
+            // Untuk skenario ini, kita anggap Mr. White sudah dihukum dengan tereliminasi
+            // Lalu cek kondisi kemenangan tim lain setelah Mr. White gagal
+            // PENTING: Panggil `checkWinConditionsAndProceed()` setelah `eliminationResultPopup` ditutup
+            // Logika ini sudah ada di `handleCloseEliminationPopup`
         }
-        // --- END PERBAIKAN ---
     }
+
 
     function processNextPenalty() {
         const nextPlayer = playersAwaitingPenalty.shift();
@@ -818,15 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
             massPenaltyNextBtn.classList.add('hidden');
         } else {
             massPenaltyModal.classList.add('hidden');
-            // --- PERBAIKAN: Setelah semua hukuman massal selesai, baru umumkan pemenang. ---
-            // Ini penting jika Mr. White menang dan ada hukuman massal.
-            // Untuk kasus Mr. White gagal, checkWinConditionsAndProceed akan dipanggil dari handleCloseEliminationPopup.
-            if (currentWinningTeamType !== null) { // Jika ada pemenang yang sudah ditentukan (yaitu Mr. White menebak benar)
-                announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
-            } else { // Jika Mr. White gagal, dan belum ada pemenang lain, panggil checkWinConditionsAndProceed
-                checkWinConditionsAndProceed();
-            }
-            // --- END PERBAIKAN ---
+            // Setelah semua hukuman massal selesai, baru umumkan pemenang
+            announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
         }
     }
 
@@ -843,14 +829,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========== CORE WIN CONDITION LOGIC (FIXED) ============
     // =========================================================
     function checkWinConditionsAndProceed() {
-        // --- PERBAIKAN: Prioritas tertinggi untuk kemenangan Mr. White yang menebak benar ---
-        // Jika Mr. White sudah menang dengan tebakan, dan semua hukuman massal sudah selesai,
-        // maka tidak perlu mengevaluasi kondisi kemenangan tim lain lagi.
-        if (currentWinningTeamType === "MR_WHITE_GUESS" && playersAwaitingPenalty.length === 0) {
+        // Jika pemenang sudah ditentukan oleh Mr. White menebak benar, langsung umumkan.
+        // Ini penting agar `handleMrWhiteGuess` bisa langsung mengumumkan pemenang tanpa intervensi.
+        if (currentWinningTeamType === "MR_WHITE_GUESS") {
             announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
             return;
         }
 
+        // Jika permainan tidak sedang berlangsung karena Mr. White sudah menebak dan kalah,
+        // atau Mr. White menebak dan menang serta hukuman sudah selesai,
+        // kita tidak perlu melanjutkan cek kondisi kemenangan lagi.
+        if (!gameInProgress && currentWinningTeamType) {
+             // Jika currentWinningTeamType sudah diset di handleMrWhiteGuess dan playersAwaitingPenalty kosong,
+             // berarti semua hukuman sudah selesai, langsung announce winner.
+             if (playersAwaitingPenalty.length === 0) {
+                 announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
+                 return;
+             }
+        }
+        
+        // Ambil data pemain yang masih aktif (belum tereliminasi)
         const activePlayers = players.filter(p => !p.isEliminated);
         const activeCivilians = activePlayers.filter(p => p.role === 'Civilian');
         const activeUndercovers = activePlayers.filter(p => p.role === 'Undercover');
@@ -865,77 +863,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeUndercovers.length === 0 && activeMrWhite.length === 0) {
             winDetected = true;
             determinedWinType = "CIVILIAN_TEAM";
+            // Pemenangnya adalah SEMUA pemain yang peran aslinya Civilian (baik yang selamat maupun tidak)
             determinedWinners = players.filter(p => p.originalRole === 'Civilian'); 
         } 
-        // Kondisi Kemenangan Tim Undercover atau Tim Mr. White atau Undercover & Mr. White:
-        // Ini terjadi jika semua Civilian sudah tereliminasi.
-        else if (activeCivilians.length === 0) {
-            winDetected = true;
-            determinedWinners = activePlayers; // All remaining Undercovers and Mr. Whites
-            
-            const survivingUndercovers = activePlayers.filter(p => p.role === 'Undercover');
-            const survivingMrWhite = activePlayers.filter(p => p.role === 'Mr. White');
-
-            if (survivingUndercovers.length > 0 && survivingMrWhite.length > 0) {
-                determinedWinType = "UC_MW_SURVIVAL";
-            } else if (survivingUndercovers.length > 0) {
-                determinedWinType = "UC_SURVIVAL";
-            } else if (survivingMrWhite.length > 0) {
-                determinedWinType = "MW_SURVIVAL";
-            }
-        }
-        
-        // --- PERBAIKAN: Menangani skenario 1 Civilian vs 1 Undercover/Mr. White (setelah Civilian terakhir dieliminasi) ---
-        // Ini harus dievaluasi *setelah* Mr. White gagal menebak atau setelah eliminasi Civilian biasa.
-        // Jika ada 1 pemain aktif tersisa dan dia adalah Undercover atau Mr. White, dan semua Civilian sudah tereliminasi.
-        if (!winDetected && activePlayers.length === 1) {
-            const lastPlayer = activePlayers[0];
-            const initialCivilianCount = players.filter(p => p.originalRole === 'Civilian').length;
-            const eliminatedCivilianCount = players.filter(p => p.originalRole === 'Civilian' && p.isEliminated).length;
-
-            if ((lastPlayer.role === 'Undercover' || lastPlayer.role === 'Mr. White') && eliminatedCivilianCount === initialCivilianCount) {
+        // Kondisi Kemenangan Tim Undercover (atau Undercover & Mr. White):
+        // Ini terjadi jika jumlah civilian sama atau lebih sedikit dari jumlah undercover + Mr. White
+        else if (activeCivilians.length <= (activeUndercovers.length + activeMrWhite.length) && activeCivilians.length > 0) {
+            // Skenario 1 Civilian vs 1 Undercover (atau 1 Undercover + 1 Mr. White)
+            // Civilian terakhir tereliminasi, maka Undercover/Mr. White yang tersisa menang.
+            if (activeCivilians.length === 1 && (activeUndercovers.length + activeMrWhite.length) >= 1 && eliminatedThisRoundPlayer?.originalRole === 'Civilian') {
                 winDetected = true;
-                determinedWinners = [lastPlayer];
-                if (lastPlayer.role === 'Undercover') {
+                determinedWinners = activePlayers.filter(p => p.originalRole === 'Undercover' || p.originalRole === 'Mr. White'); // Pemenang adalah Undercover/Mr. White yang aktif
+                if (activeUndercovers.length > 0 && activeMrWhite.length > 0) {
+                    determinedWinType = "UC_MW_SURVIVAL";
+                } else if (activeUndercovers.length > 0) {
                     determinedWinType = "UC_SURVIVAL";
-                } else if (lastPlayer.role === 'Mr. White') {
+                } else if (activeMrWhite.length > 0) {
                     determinedWinType = "MW_SURVIVAL";
                 }
+            } else if (activeCivilians.length === 0) { // Semua Civilian tereliminasi
+                 winDetected = true;
+                 determinedWinners = activePlayers; // Pemenangnya adalah semua yang masih bertahan
+                 if (activeUndercovers.length > 0 && activeMrWhite.length > 0) {
+                     determinedWinType = "UC_MW_SURVIVAL";
+                 } else if (activeUndercovers.length > 0) {
+                     determinedWinType = "UC_SURVIVAL";
+                 } else if (activeMrWhite.length > 0) {
+                     determinedWinType = "MW_SURVIVAL";
+                 }
             }
         }
-        // --- END PERBAIKAN ---
 
 
-        // Jika ada kondisi kemenangan terdeteksi
+        // Jika ada kondisi kemenangan yang terdeteksi
         if (winDetected) {
-            gameInProgress = false; // End the game
+            gameInProgress = false;
             currentWinningTeamType = determinedWinType;
             currentWinnerPlayerObjects = determinedWinners;
+            if (determinedWinType !== "NO_WINNER_DRAW") playWinSound();
             
-            if (determinedWinType !== "NO_WINNER_DRAW") {
-                playWinSound(); // Play win sound only if there's an actual winner
-            }
-            
-            // Identify players who lose and are still active to give them penalties
+            // Siapkan pemain yang akan dihukum
+            // Ini adalah pemain yang kalah dan masih aktif
             playersAwaitingPenalty = players.filter(p => !p.isEliminated && !determinedWinners.includes(p));
 
             if (playersAwaitingPenalty.length > 0) {
                 massPenaltyModal.classList.remove('hidden');
-                processNextPenalty(); // Start the penalty sequence
+                processNextPenalty();
             } else {
-                announceWinner(currentWinningTeamType, currentWinnerPlayerObjects); // Announce winner directly if no penalties
+                announceWinner(currentWinningTeamType, currentWinnerPlayerObjects);
             }
+
         } else {
-            // No win condition met, continue the game
-            gameInProgress = true; // Ensure game is still in progress for next elimination
+            // Jika tidak ada yang menang, lanjutkan permainan ke ronde berikutnya
             updateActivePlayerListWithAvatars();
             document.getElementById('voting-phase').classList.remove('hidden');
-            // Ensure any previous selection is cleared for the next vote
-            playerSelectedForElimination = null; 
+            playerSelectedForElimination = null;
             playerToEliminateDisplay.textContent = "Belum ada";
             confirmEliminationBtn.disabled = true;
-            resetTruthOrDareButtons(); // Reset truth/dare buttons in case they were used
-            eliminationResultPopup.classList.add('hidden'); // Hide elimination popup
+            resetTruthOrDareButtons();
+            // Pastikan popup eliminasi tersembunyi jika belum
+            eliminationResultPopup.classList.add('hidden');
         }
     }
     // =========== END OF FIXED LOGIC ============
@@ -944,33 +931,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function announceWinner(winningTeamType, winnerPlayerObjects = []) {
         let popupMsg = "🎉 Selamat! 🎉"; let popupDetail = "";
         switch (winningTeamType) {
-            case "MR_WHITE_GUESS": 
-                popupMsg = `🎉 <i class="fas fa-crown"></i> Luar Biasa, ${winnerPlayerObjects[0].name}! 🎉`; 
-                popupDetail = "Anda (Mr. White) berhasil menebak kata rahasia Civilian!"; 
-                break;
-            case "UC_SURVIVAL": 
-                popupMsg = `🎉 Selamat, Tim Undercover! 🎉`; 
-                popupDetail = "Tim Undercover berhasil bertahan hingga akhir!"; 
-                break;
-            case "MW_SURVIVAL": 
-                popupMsg = `🎉 Selamat, Tim Mr. White! 🎉`; 
-                popupDetail = "Mr. White berhasil bertahan hingga semua Civilian tersingkir!"; 
-                break;
-            case "UC_MW_SURVIVAL": 
-                popupMsg = `🎉 Selamat, Tim Undercover & Mr. White! 🎉`; 
-                popupDetail = "Tim Undercover dan Mr. White berhasil mengeliminasi semua Civilian!"; 
-                break;
-            case "CIVILIAN_TEAM": 
-                popupMsg = `🎉 Selamat, Tim Civilian! 🎉`; 
-                popupDetail = "Tim Civilian berhasil mengungkap semua penjahat!"; 
-                break;
-            default: 
-                popupDetail = "Permainan telah berakhir.";
+            case "MR_WHITE_GUESS": popupMsg = `🎉 <i class="fas fa-crown"></i> Luar Biasa, ${winnerPlayerObjects[0].name}! 🎉`; popupDetail = "Anda (Mr. White) berhasil menebak kata rahasia Civilian!"; break;
+            case "UC_DUEL_WIN": case "UC_SURVIVAL": popupMsg = `🎉 Selamat, Tim Undercover! 🎉`; popupDetail = "Tim Undercover berhasil bertahan hingga akhir!"; break;
+            case "MW_SURVIVAL": popupMsg = `🎉 Selamat, Tim Mr. White! 🎉`; popupDetail = "Mr. White berhasil bertahan hingga semua Civilian tersingkir!"; break;
+            case "UC_MW_SURVIVAL": popupMsg = `🎉 Selamat, Tim Undercover & Mr. White! 🎉`; popupDetail = "Tim Undercover dan Mr. White berhasil mengeliminasi semua Civilian!"; break;
+            case "CIVILIAN_TEAM": popupMsg = `🎉 Selamat, Tim Civilian! 🎉`; popupDetail = "Tim Civilian berhasil mengungkap semua penjahat!"; break;
+            default: popupDetail = "Permainan telah berakhir.";
         }
         popupWinnerMessageH2.innerHTML = popupMsg; popupWinnerDetailP.textContent = popupDetail;
         if (winningTeamType !== "NO_WINNER_DRAW" && confettiAnimation) { confettiAnimation.classList.remove('hidden'); confettiAnimation.src = confettiAnimation.src.split("?")[0] + "?" + new Date().getTime(); } else if (confettiAnimation) { confettiAnimation.classList.add('hidden'); }
+        winnerPopupModal.classList.remove('hidden'); // Ensure it's hidden before showing
         winnerPopupModal.classList.remove('hidden');
-        switchScreen(gameSection, null); // Pastikan game section disembunyikan
+        switchScreen(gameSection, null);
     }
 
     function closeWinnerPopupAndShowRoundScores() { winnerPopupModal.classList.add('hidden'); if (confettiAnimation) confettiAnimation.classList.add('hidden'); switchScreen(null, roundOverSection); displayRoundOverDetails(); }
@@ -979,23 +951,26 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateAndDisplayRoundScores();
         roundOverSection.querySelector('h2').textContent = "🏁 Babak Selesai! 🏁";
         roundRolesListUl.innerHTML = '';
+        const winningRoles = [];
+        if (["CIVILIAN_TEAM"].includes(currentWinningTeamType)) winningRoles.push("Civilian");
+        if (["UC_DUEL_WIN", "UC_SURVIVAL", "UC_MW_SURVIVAL"].includes(currentWinningTeamType)) winningRoles.push("Undercover");
+        if (["MR_WHITE_GUESS", "MW_SURVIVAL", "UC_MW_SURVIVAL"].includes(currentWinningTeamType)) winningRoles.push("Mr. White");
         
         players.forEach(p => {
-            const li = document.createElement('li'); 
-            let roleIcon = '';
+            const li = document.createElement('li'); let roleIcon = '';
             if (p.originalRole === 'Civilian') roleIcon = '<i class="fas fa-shield-alt" style="color:var(--theme-success)"></i> ';
             else if (p.originalRole === 'Undercover') roleIcon = '<i class="fas fa-user-secret" style="color:var(--theme-error)"></i> ';
             else if (p.originalRole === 'Mr. White') roleIcon = '<i class="fas fa-user-tie" style="color:var(--theme-mrwhite)"></i> ';
-            
+            // Cek apakah player adalah bagian dari winnerPlayerObjects.
             const isWinner = currentWinnerPlayerObjects.some(wp => wp.name === p.name);
-            let status = '';
 
+            let status = p.isEliminated ? 'Tereliminasi' : 'Selamat';
             if (isWinner) {
                 status = '🎉 MENANG 🎉';
-            } else if (p.isEliminated) {
+            } else if (p.isEliminated && !isWinner) {
                 status = 'Tereliminasi';
-            } else {
-                status = 'Kalah (Tidak Tereliminasi)'; 
+            } else if (!p.isEliminated && !isWinner) {
+                status = 'Kalah (Tidak Tereliminasi)'; // Tambahkan status ini untuk pemain yang tidak tereliminasi tapi kalah
             }
             
             const roundScoreForPlayer = p.roundScoreThisTurn || 0;
@@ -1008,32 +983,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateAndDisplayRoundScores() {
         players.forEach(player => {
-            player.roundScoreThisTurn = POINTS_LOSER;
+            player.roundScoreThisTurn = POINTS_LOSER; // Reset skor babak ini
             const isDesignatedWinner = currentWinnerPlayerObjects.some(wp => wp.name === player.name);
 
             if (isDesignatedWinner) {
                 switch (currentWinningTeamType) {
-                    case "MR_WHITE_GUESS": 
-                        if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_GUESS_WIN; 
+                    case "MR_WHITE_GUESS":
+                        // Hanya Mr. White yang menebak benar yang dapat poin
+                        if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_GUESS_WIN;
                         break;
-                    case "UC_SURVIVAL": 
-                        if (player.originalRole === "Undercover") player.roundScoreThisTurn = POINTS_UC_WIN; 
+                    case "UC_DUEL_WIN": // Ini bisa jadi UC_SURVIVAL juga
+                    case "UC_SURVIVAL":
+                        // Undercover menang jika bertahan
+                        if (player.originalRole === "Undercover") player.roundScoreThisTurn = POINTS_UC_WIN;
                         break;
-                    case "MW_SURVIVAL": 
-                        if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_SURVIVAL_WIN; 
+                    case "MW_SURVIVAL":
+                        // Mr. White menang jika bertahan
+                        if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_SURVIVAL_WIN;
                         break;
-                    case "UC_MW_SURVIVAL": 
-                        if (player.originalRole === "Undercover") player.roundScoreThisTurn = POINTS_UC_WIN; 
-                        else if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_SURVIVAL_WIN; 
+                    case "UC_MW_SURVIVAL":
+                        // UC dan MW menang bersama jika bertahan
+                        if (player.originalRole === "Undercover") player.roundScoreThisTurn = POINTS_UC_WIN;
+                        else if (player.originalRole === "Mr. White") player.roundScoreThisTurn = POINTS_MW_SURVIVAL_WIN;
                         break;
-                    case "CIVILIAN_TEAM": 
-                        if (player.originalRole === "Civilian") player.roundScoreThisTurn = player.isEliminated ? POINTS_CIVILIAN_TEAM_WIN_ELIMINATED : POINTS_CIVILIAN_TEAM_WIN_SURVIVED; 
+                    case "CIVILIAN_TEAM":
+                        // Civilian menang
+                        if (player.originalRole === "Civilian") {
+                            player.roundScoreThisTurn = player.isEliminated ? POINTS_CIVILIAN_TEAM_WIN_ELIMINATED : POINTS_CIVILIAN_TEAM_WIN_SURVIVED;
+                        }
                         break;
                 }
             }
             player.score += player.roundScoreThisTurn;
         });
     }
+
 
     function showFinalScoreboard() {
         finalScoreDisplayModal.classList.remove('hidden');

@@ -135,10 +135,9 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
 .modal-content {
     background-color: var(--theme-surface); border-radius: var(--border-radius-main); 
     border: 1px solid var(--theme-border); box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
-    width: 95%; max-width: 480px; padding: 15px; /* Reduced padding further */
+    width: 95%; max-width: 480px; padding: 20px; /* Reduced padding */
     position: relative;
-    display: flex; flex-direction: column; 
-    gap: 10px; /* Reduced gap */
+    display: flex; flex-direction: column; gap: 10px; /* Reduced gap */
     max-height: 98vh; /* Ensure modal itself doesn't exceed viewport height */
     overflow-y: auto; /* Allow modal to scroll if content is too much for small screens */
     -ms-overflow-style: none; /* IE and Edge */
@@ -209,127 +208,105 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
 .role-mrwhite { color: var(--theme-mrwhite); font-weight: 600; }
 
 /* =============================================== */
-/* ========= WORD PACK MANAGER MODAL STYLES (DIPERBAIKI LAGI) ======== */
+/* ========= WORD PACK MANAGER MODAL STYLES (DIPERBAIKI) ======== */
 /* =============================================== */
 #word-pack-manager-modal .modal-content {
-    max-width: 400px; /* Slightly narrower to fit more on very small screens */
-    padding: 10px; /* Further reduced padding */
-    gap: 8px; /* Further reduced gap */
-    justify-content: flex-start; /* Align content to the top */
-    overflow-y: auto; /* Allow internal scrolling if content overflows */
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    max-width: 480px;
+    padding: 15px; /* Reduced padding */
+    gap: 10px; /* Reduced gap */
+    display: flex; /* Use flexbox for vertical alignment */
+    flex-direction: column;
 }
-#word-pack-manager-modal .modal-content::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
-}
-
 .pack-manager-section { 
     display: flex; 
     flex-direction: column; 
-    gap: 6px; /* Even smaller gap */
+    gap: 8px; /* Reduced gap */
     width: 100%; 
 }
 .pack-manager-section h4 { 
     color: var(--theme-primary); 
     text-align: left; 
-    margin: 0; 
-    font-size: 0.9em; /* Even smaller sub-title font */
-    border-bottom: 1px solid var(--theme-border); /* Add a subtle line */
-    padding-bottom: 4px;
-    text-transform: uppercase;
+    margin: 0 0 5px 0; 
+    font-size: 1em; /* Slightly smaller font */
 }
 .input-group { 
     display: flex; 
-    gap: 6px; /* Even smaller gap */
+    gap: 8px; /* Reduced gap */
     align-items: center; 
     flex-wrap: wrap; /* Allow wrapping on small screens */
 }
 .input-group label { 
     flex-shrink: 0; 
     margin-bottom: 0; 
-    font-size: 0.75em; /* Smallest label font */
-    color: var(--theme-text-secondary);
+    font-size: 0.85em; /* Smaller label font */
 }
 .input-group input, .input-group select { 
     margin-bottom: 0; 
-    flex-grow: 1; 
-    padding: 6px; /* Reduced padding for inputs */
-    font-size: 0.8em; /* Smaller font for inputs */
-    min-height: 32px; /* Ensure minimum height for usability */
+    flex-grow: 1; /* Allow inputs to grow */
+    padding: 8px; /* Reduced padding */
+    font-size: 0.9em; /* Smaller font */
 }
 .input-group button { 
     flex-shrink: 0; 
     margin: 0; 
-    padding: 6px 10px; /* Adjusted padding for buttons */
-    font-size: 0.75em; /* Smaller button font */
-    min-height: 32px; /* Ensure minimum height for usability */
+    padding: 8px 12px; /* Adjusted padding */
+    font-size: 0.85em; /* Smaller font */
 }
 .word-pair-input { 
     display: flex; 
-    gap: 6px; /* Reduced gap */
-    margin-top: 5px; 
+    gap: 8px; /* Reduced gap */
+    margin-top: 5px; /* Reduced margin */
     flex-direction: column; /* Stack on mobile by default */
 }
 .word-pair-input input {
-    margin-bottom: 0; 
+    margin-bottom: 0; /* Remove extra margin */
 }
 
-@media (min-width: 380px) { /* Adjust for slightly wider mobiles */
+@media (min-width: 400px) { /* Adjust for slightly wider mobiles */
     .word-pair-input {
         flex-direction: row; /* Side-by-side on wider mobiles */
     }
 }
 
 #add-word-pair-btn { 
-    margin-top: 8px; 
-    width: 100%; 
+    margin-top: 8px; /* Adjusted margin */
+    width: 100%; /* Full width */
 }
 #delete-pack-btn { 
     margin-top: 5px; 
     align-self: flex-start; 
-    padding: 0 5px; /* Minimal padding */
-    margin-left: 0; /* Remove negative margin */
-    font-size: 0.7em; /* Smallest font for delete pack button */
-    border: none; /* No border for text button */
-    background: none;
-    text-decoration: underline;
-    color: var(--theme-error);
+    padding-left: 0; 
+    margin-left: -4px; 
+    font-size: 0.8em; /* Smaller font */
 }
-#delete-pack-btn:hover {
-    background-color: rgba(245, 101, 101, 0.1);
-}
-
 #word-list-display {
     list-style: none; 
-    padding: 6px; /* Reduced padding */
+    padding: 8px; /* Reduced padding */
     margin: 0;
     background-color: var(--theme-background); 
     border-radius: var(--border-radius-small);
-    min-height: 60px; /* Drastically reduced min-height */
-    max-height: 80px; /* Drastically reduced max-height */
-    overflow-y: auto; /* Keep scroll for long lists (hidden visually) */
-    font-size: 0.75em; /* Smallest font for list items */
+    min-height: 80px; /* Reduced min-height */
+    max-height: 100px; /* Reduced max-height */
+    overflow-y: auto; /* Keep scroll for long lists */
+    font-size: 0.8em; /* Smaller font for list items */
     border: 1px solid var(--theme-border);
 }
 #word-list-display li { 
-    padding: 3px; /* Reduced padding */
+    padding: 4px; /* Reduced padding */
     border-bottom: 1px solid var(--theme-border); 
-    display: flex; 
+    display: flex; /* Flex to align delete button */
     justify-content: space-between;
     align-items: center;
-    line-height: 1.3;
 }
 #word-list-display li:last-child { border-bottom: none; }
 #word-list-display .delete-word-btn {
     background: none;
     border: none;
     color: var(--theme-error);
-    font-size: 0.8em; /* Adjusted delete icon size */
-    padding: 0 3px;
+    font-size: 0.9em;
+    padding: 2px 5px;
     margin: 0;
     line-height: 1;
-    cursor: pointer;
 }
 #word-list-display .delete-word-btn:hover {
     color: #fff;
@@ -337,8 +314,9 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
     border-radius: var(--border-radius-small);
 }
 
-#current-pack-display-name { font-weight: bold; color: var(--theme-accent); font-size: 0.85em; } /* Adjusted font size */
-#close-word-pack-manager-done-btn { margin-top: 10px; width: 100%; padding: 10px; font-size: 0.9em; } 
+
+#current-pack-display-name { font-weight: bold; color: var(--theme-accent); }
+#close-word-pack-manager-done-btn { margin-top: 10px; width: 100%; } /* Adjusted margin */
 
 /* =============================================== */
 /* ============= GAYA SKOR AKHIR (DIPERBAIKI) ============= */
@@ -355,36 +333,35 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
     background-color: var(--theme-surface); 
     border-radius: var(--border-radius-small); 
     overflow: hidden; 
-    font-size: 0.8em; /* Smaller font for table */
+    font-size: 0.85em; /* Smaller font for table */
 }
 #final-score-table td, #final-score-table th { 
     border-bottom: 1px solid var(--theme-border); 
-    padding: 6px 8px; /* Reduced padding */
-    text-align: left; 
+    padding: 8px 10px; /* Reduced padding */
+    text-align: left; /* Align text left for better readability */
 }
 #final-score-table thead th { 
     background-color: var(--theme-background); 
     color: var(--theme-text-secondary); 
     font-weight: 600; 
     text-transform: uppercase; 
-    font-size: 0.7em; /* Even smaller font for header */
+    font-size: 0.75em; /* Even smaller font for header */
 }
 #final-score-table tbody tr:hover { background-color: rgba(0, 242, 169, 0.05); }
 #final-score-table .score-value { 
     font-weight: 700; 
     color: var(--theme-primary); 
-    font-size: 0.9em; /* Adjusted score value size */
+    font-size: 1em; /* Slightly larger score value */
     text-align: right; 
 }
 #final-score-table td:first-child { 
     text-align: center; 
     font-weight: 700; 
     color: var(--theme-accent); 
-    width: 15%; 
+    width: 15%; /* Give rank a fixed width */
 }
 #final-score-table td:nth-child(2) { /* Player Name */
     width: 35%; 
-    word-break: break-all; /* Allow long names to break */
 }
 #final-score-table td:nth-child(3) { /* Role */
     width: 25%;
@@ -410,15 +387,13 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
     justify-content: space-around; 
     align-items: center; 
     width: 100%; 
-    margin-top: 15px; 
+    margin-top: 15px; /* Adjusted margin */
     flex-wrap: wrap; 
-    gap: 8px; 
+    gap: 8px; /* Reduced gap */
 }
 .final-buttons-wrapper button {
-    flex-grow: 1; 
-    min-width: 100px; /* Reduced min-width for buttons */
-    padding: 8px 12px; /* Reduced padding */
-    font-size: 0.85em; /* Reduced font size */
+    flex-grow: 1; /* Allow buttons to grow and fill space */
+    min-width: 120px; /* Minimum width for buttons */
 }
 
 /* =============================================== */
@@ -444,8 +419,9 @@ button:disabled { background: #394260 !important; color: #848ca8 !important; bor
 .animate-section-in { animation: fadeInFromBottom 0.4s ease-out forwards; }
 
 /* Global modal overflow adjustment */
-/* NOTE: This hides the scrollbar visually but allows content to be scrolled */
 .modal-content {
+    max-height: 98vh; /* Limit height of modal content */
+    overflow-y: auto; /* Allow scrolling *within* the modal if content exceeds max-height */
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
 }
